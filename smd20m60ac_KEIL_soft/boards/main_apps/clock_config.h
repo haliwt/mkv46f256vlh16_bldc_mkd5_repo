@@ -135,6 +135,14 @@ extern "C" {
  */
 void BOARD_BootClockVLPR(void);
 
+
+void DelayMs(uint32_t ms);
+void DelayUs(uint32_t us);
+void DelayInit(void);
+void DWT_DelayInit(void);
+void DWT_DelayUs(uint32_t us);
+void DWT_DelayMs(uint32_t ms);
+
 #if defined(__cplusplus)
 }
 #endif /* __cplusplus*/

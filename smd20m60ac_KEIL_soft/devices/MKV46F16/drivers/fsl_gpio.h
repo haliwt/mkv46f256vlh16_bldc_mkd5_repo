@@ -10,11 +10,89 @@
 #define _FSL_GPIO_H_
 
 #include "fsl_common.h"
+#include "fsl_port.h"
 
 /*!
  * @addtogroup gpio
  * @{
  */
+/**
+ * \enum GPIO_Mode_Type
+ * \brief GPIO??g???
+ */
+ 
+ /**
+ * \struct DAC_InitTypeDef
+ * \brief GPIO???'???? 
+ */
+typedef enum 
+{
+    DISABLE = 0,        /**< h'S */
+    ENABLE = !DISABLE,  /**< 'S */
+}FunctionalState;
+
+typedef enum
+{
+    kGPIO_Mode_IFT = 0x00,       /**< ???? */
+    kGPIO_Mode_IPD = 0x01,       /**< ?-?? */
+    kGPIO_Mode_IPU = 0x02,       /**< ?-?? */
+    kGPIO_Mode_OOD = 0x03,       /**< ?©?? */
+    kGPIO_Mode_OPP = 0x04,       /**< ???? */
+}GPIO_Mode_Type;
+
+typedef struct
+{
+    uint8_t                instance;    ///<????HW_GPIOA~HW_GPIOF
+    GPIO_Mode_Type         mode;        ///<??g?
+    uint32_t               pinx;        ///<???0~31
+}GPIO_InitTypeDef;
+
+
+/**
+ * \struct DAC_InitTypeDef
+ * \brief GPIO???'???? 
+ */
+
+
+
+
+#define HW_GPIOA  (0x00U) /*GPIOg?A,??`?*/  
+#define HW_GPIOB  (0x01U)
+#define HW_GPIOC  (0x02U)
+#define HW_GPIOD  (0x03U)
+#define HW_GPIOE  (0x04U)
+#define HW_GPIOF  (0x05U)
+
+#define PAout(n)   BITBAND_REG(PTA->PDOR, n)
+#define PAin(n)    BITBAND_REG(PTA->PDIR, n)
+  
+#define PBout(n)   BITBAND_REG(PTB->PDOR, n)
+#define PBin(n)    BITBAND_REG(PTB->PDIR, n)
+
+#define PCout(n)   BITBAND_REG(PTC->PDOR, n)
+#define PCin(n)    BITBAND_REG(PTC->PDIR, n)
+
+#define PDout(n)   BITBAND_REG(PTD->PDOR, n)
+#define PDin(n)    BITBAND_REG(PTD->PDIR, n)
+
+#define PEout(n)   BITBAND_REG(PTE->PDOR, n)
+#define PEin(n)    BITBAND_REG(PTE->PDIR, n)
+
+#define PFout(n)   BITBAND_REG(PTF->PDOR, n)
+#define PFin(n)    BITBAND_REG(PTF->PDIR, n)
+
+#define PGout(n)   BITBAND_REG(PTG->PDOR, n)
+#define PGin(n)    BITBAND_REG(PTG->PDIR, n)
+void GPIO_Init(GPIO_InitTypeDef * GPIO_InitStruct);
+
+
+uint8_t GPIO_QuickInit(uint32_t instance, uint32_t pinx, GPIO_Mode_Type mode);
+void PORT_PinPullConfig(uint32_t instance, uint8_t pin, port_pull pull);
+
+
+#define GPIO_BASES                               { PTA, PTB, PTC, PTD, PTE }
+#define PORT_BASES                               { PORTA, PORTB, PORTC, PORTD, PORTE }
+
 
 /*******************************************************************************
  * Definitions

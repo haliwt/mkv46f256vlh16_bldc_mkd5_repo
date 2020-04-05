@@ -15,8 +15,17 @@
 
 /*******************************************************************************
  * Variables
- ******************************************************************************/
-
+******************************************************************************/
+static GPIO_Type * const GPIO_InstanceTable[] = GPIO_BASES;
+static PORT_Type * const PORT_InstanceTable[] = PORT_BASES;
+static const uint32_t SIM_GPIOClockGateTable[] =
+{
+    SIM_SCGC5_PORTA_MASK,
+    SIM_SCGC5_PORTB_MASK,
+    SIM_SCGC5_PORTC_MASK,
+    SIM_SCGC5_PORTD_MASK,
+    SIM_SCGC5_PORTE_MASK,
+};
 #if !(defined(FSL_FEATURE_PORT_HAS_NO_INTERRUPT) && FSL_FEATURE_PORT_HAS_NO_INTERRUPT)
 static PORT_Type *const s_portBases[] = PORT_BASE_PTRS;
 static GPIO_Type *const s_gpioBases[] = GPIO_BASE_PTRS;
@@ -341,5 +350,158 @@ void FGPIO_CheckAttributeBytes(FGPIO_Type *base, gpio_checker_attribute_t attrib
                  (attribute << FGPIO_GACR_ACB2_SHIFT) | (attribute << FGPIO_GACR_ACB3_SHIFT);
 }
 #endif
-
 #endif /* FSL_FEATURE_SOC_FGPIO_COUNT */
+/**************************************************/
+/*WT.edit add mk60n process*/
+/*********************************************************************
+ *
+ *Function Name : void GPIO_PinConfig(uint32_t instane .....)
+ *      
+ * example:GPIO_PinConfig(HW_GPIOB, 3, kInpput);
+ * @endcode
+ * @param[in]  instance GPIO PORT 
+ *              @arg HW_GPIOA  
+ *              @arg HW_GPIOB 
+ *              @arg HW_GPIOC 
+ *              @arg HW_GPIOD 
+ *              @arg HW_GPIOE 
+ * @param[in]  pin  HW_GPIOx of pin  0~31
+ * @param[in]  mode  GPIOx input or output
+ *              @arg kInpput  
+ *              @arg kOutput  
+ * @retval None
+***********************************************************************/
+void GPIO_PinConfig(uint32_t instance, uint8_t pin, gpio_pin_direction_t mode)
+{
+    SIM->SCGC5 |= SIM_GPIOClockGateTable[instance];
+    (mode == kGPIO_DigitalOutput) ? (GPIO_InstanceTable[instance]->PDDR |= (1 << pin)):(GPIO_InstanceTable[instance]->PDDR &= ~(1 << pin));
+}
+
+void PORT_PinMuxConfig(uint32_t instance, uint8_t pin, port_mux_t pinMux)
+{
+    SIM->SCGC5 |= SIM_GPIOClockGateTable[instance];
+    PORT_InstanceTable[instance]->PCR[pin] &= ~(PORT_PCR_MUX_MASK);
+    PORT_InstanceTable[instance]->PCR[pin] |=  PORT_PCR_MUX(pinMux);
+}
+
+void PORT_PinOpenDrainConfig(uint32_t instance, uint8_t pin, bool status)
+{
+    SIM->SCGC5 |= SIM_GPIOClockGateTable[instance];
+    (status) ? (PORT_InstanceTable[instance]->PCR[pin] |= PORT_PCR_ODE_MASK):(PORT_InstanceTable[instance]->PCR[pin] &= ~PORT_PCR_ODE_MASK);
+}
+
+/*****************************************************************
+ *
+ * @brief  set pin internal pullup/down resistors
+ * @note   pull resistor value is about 20K
+ * @param[in]  instance GPIO PORT
+ *              @arg HW_GPIOx  GPIOx moudle
+ * @param[in]  pin  pin index number 0-31
+ * @param[in]  pull pull select
+ *              @arg kPullDisabled  disable pull resistor
+ *              @arg kPullUp        pull up
+ *              @arg kPullDown      pull down
+ * 
+**********************************************************************/
+void PORT_PinPullConfig(uint32_t instance, uint8_t pin, port_pull pull)
+{
+    SIM->SCGC5 |= SIM_GPIOClockGateTable[instance];
+    switch(pull)
+    {
+        case kPORT_PullDisable:
+            PORT_InstanceTable[instance]->PCR[pin] &= ~PORT_PCR_PE_MASK;
+            break;
+        case kPORT_PullUp:
+            PORT_InstanceTable[instance]->PCR[pin] |= PORT_PCR_PE_MASK;
+            PORT_InstanceTable[instance]->PCR[pin] |= PORT_PCR_PS_MASK;
+            break;
+        case kPORT_PullDown :
+            PORT_InstanceTable[instance]->PCR[pin] |= PORT_PCR_PE_MASK;
+            PORT_InstanceTable[instance]->PCR[pin] &= ~PORT_PCR_PS_MASK;
+            break;
+        default:
+            break;
+    }
+}
+
+/*********************************************************************
+ * @brief  GPIO?????
+ * @code
+ *    //?????PORTB???10?????????
+ *    GPIO_InitTypeDef GPIO_InitStruct1;      //????????
+ *    GPIO_InitStruct1.instance = HW_GPIOB;   //??PORTB??
+ *    GPIO_InitStruct1.mode = kGPIO_Mode_OPP; //????
+ *    GPIO_InitStruct1.pinx = 10;             //??10??
+ *    //?????GPIO?? 
+ *    GPIO_Init(&GPIO_InitStruct1);
+ * @endcode
+ * @param[in]  GPIO_InitStruct GPIO??????,?????????  
+ * @see GPIO???????
+ * @retval None
+*********************************************************************/
+void GPIO_Init(GPIO_InitTypeDef * GPIO_InitStruct)
+{
+    /* config state */
+    switch(GPIO_InitStruct->mode)
+    {
+        case kGPIO_Mode_IFT:
+            PORT_PinPullConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kPORT_PullDisable);
+            PORT_PinOpenDrainConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, DISABLE);
+            GPIO_PinConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx,  kGPIO_DigitalInput);
+            break;
+        case kGPIO_Mode_IPD:
+            PORT_PinPullConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx,  kPORT_PullDown);
+            PORT_PinOpenDrainConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, DISABLE);
+            GPIO_PinConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx,  kGPIO_DigitalInput);
+            break;
+        case kGPIO_Mode_IPU:
+            PORT_PinPullConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kPORT_PullUp);
+            PORT_PinOpenDrainConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, DISABLE);
+            GPIO_PinConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx,  kGPIO_DigitalInput);
+            break;
+        case kGPIO_Mode_OOD:
+            PORT_PinPullConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kPORT_PullUp);
+            PORT_PinOpenDrainConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, ENABLE);
+            GPIO_PinConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kGPIO_DigitalOutput);
+            break;
+        case kGPIO_Mode_OPP:
+            PORT_PinPullConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kPORT_PullDisable);
+            PORT_PinOpenDrainConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, DISABLE);
+            GPIO_PinConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kGPIO_DigitalOutput);
+            break;
+        default:
+            break;					
+    }
+    /* config pinMux */
+    PORT_PinMuxConfig(GPIO_InitStruct->instance, GPIO_InitStruct->pinx, kPORT_MuxAsGpio );
+}
+/**
+ * @brief  ???????GPIO?? ????GPIO_Init??????
+ * @code
+ *      //?????PORTB???10?????????
+ *      GPIO_QuickInit(HW_GPIOB, 10, kGPIO_Mode_OPP);
+ * @endcode
+ * @param[in]  instance GPIO???
+ *              @arg HW_GPIOA ???PORTA??
+ *              @arg HW_GPIOB ???PORTB??
+ *              @arg HW_GPIOC ???PORTC??
+ *              @arg HW_GPIOD ???PORTD??
+ *              @arg HW_GPIOE ???PORTE??
+ * @param[in]  pinx ??????? 0~31
+ * @param[in]  mode ??????
+ *              @arg kGPIO_Mode_IFT ????
+ *              @arg kGPIO_Mode_IPD ????
+ *              @arg kGPIO_Mode_IPU ????
+ *              @arg kGPIO_Mode_OOD ????
+ *              @arg kGPIO_Mode_OPP ????
+ * @retval instance GPIO???
+ */
+uint8_t GPIO_QuickInit(uint32_t instance, uint32_t pinx, GPIO_Mode_Type mode)
+{
+    GPIO_InitTypeDef GPIO_InitStruct1;
+    GPIO_InitStruct1.instance = instance;
+    GPIO_InitStruct1.mode = mode;
+    GPIO_InitStruct1.pinx = pinx;
+    GPIO_Init(&GPIO_InitStruct1);
+    return  instance;
+}

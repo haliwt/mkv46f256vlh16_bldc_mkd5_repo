@@ -32,12 +32,12 @@
 
 #if defined(FSL_FEATURE_PORT_HAS_PULL_ENABLE) && FSL_FEATURE_PORT_HAS_PULL_ENABLE
 /*! @brief Internal resistor pull feature selection */
-enum _port_pull
+typedef enum _port_pull
 {
     kPORT_PullDisable = 0U, /*!< Internal pull-up/down resistor is disabled. */
     kPORT_PullDown    = 2U, /*!< Internal pull-down resistor is enabled. */
     kPORT_PullUp      = 3U, /*!< Internal pull-up resistor is enabled. */
-};
+}port_pull;
 #endif /* FSL_FEATURE_PORT_HAS_PULL_ENABLE */
 
 #if defined(FSL_FEATURE_PORT_HAS_SLEW_RATE) && FSL_FEATURE_PORT_HAS_SLEW_RATE

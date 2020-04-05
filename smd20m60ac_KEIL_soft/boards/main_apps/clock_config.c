@@ -413,3 +413,72 @@ void BOARD_BootClockVLPR(void)
     /* Set SystemCoreClock variable. */
     SystemCoreClock = BOARD_BOOTCLOCKVLPR_CORE_CLOCK;
 }
+
+/*WT.EDIT DelayMs()*/
+void DelayInit(void)
+{
+    DWT_DelayInit();
+}
+
+void DWT_DelayInit(void)
+{
+    /* enable DEM */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    
+    /* enable counter */
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+void DWT_DelayUs(uint32_t us)
+{
+    uint32_t startts, endts, ts;
+    startts = DWT->CYCCNT;
+    ts =  us * (SystemCoreClock /(1000*1000) ); 
+    endts = startts + ts;      
+    if(endts > startts)  
+    {
+        while(DWT->CYCCNT < endts);       
+    }
+    else
+    {
+        while(DWT->CYCCNT > endts);
+        while(DWT->CYCCNT < endts);
+    }
+}
+/**
+ * @brief  DWT?????
+ * @param[in]  ms ?????
+ * \retval  None
+ */
+void DWT_DelayMs(uint32_t ms)
+{
+    DWT_DelayUs(ms*1000);
+    // DWT_DelayUs(ms*500);
+}
+
+/**
+ * @brief  ???????
+ * @code
+ *   // ?????????,
+ *   //?????Systick????????
+ *   DelayInit();
+ * @endcode
+ * @retval None
+ */
+
+
+
+/**
+ * @brief ????????????
+ * @code
+ *   // ??500ms?????
+ *   DelayMs(500);
+ * @endcode
+ * @param[in]  ms ???????,????
+ * @retval None
+ * @note  ?????????????
+ */
+
+void DelayMs(uint32_t ms)
+{
+    DWT_DelayMs(ms);
+}
