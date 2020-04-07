@@ -70,9 +70,9 @@ int main(void)
      uint8_t printx2[]="Key Dir = 0 is CCW \r\n";
  
      uint8_t ucKeyCode=0;
-     uint8_t RxBuffer[8],i,ki,kp,kd,k0;
+     uint8_t RxBuffer[8],i;
 	 
-	 float KP,KI,KD,KPV,KIV,KDV;
+	  uint8_t k0,ki,kp,kd,vki,vkp,vkd;
      volatile uint16_t Time_CNT,EnBuf[2]={0,0};
 	
 	 uint32_t eIn_n= 0;
@@ -194,53 +194,10 @@ int main(void)
 		
 		   VerticalStop_Regin();
 	}
-  else if(motor_ref.motor_run ==3){ //Don't motor run to stop 
+  else{ //Don't motor run to stop 
       
 	  
-		     
-		  	
-				  UART_ReadBlocking(DEMO_UART, RxBuffer, 8);
-				  PRINTF("PID input referece \n");
-                  for(i=0;i<8;i++){
-				  	    
-						  if(RxBuffer[0]==0xff){
-							  kp=RxBuffer[1];
-		                      ki=RxBuffer[2];
-							  kd=RxBuffer[3];
-		                     
-		                      PRINTF("KP KI KD = %d %d %d \n\r",kp,ki,kd);
-							  PRINTF("KPv KIv KDv = %d %d %d \n\r",RxBuffer[4],RxBuffer[5],RxBuffer[6]);
-		                      KP = (float)kp;
-		                      KI = (float)ki/10;
-		                      KD = (float)kd;
-							  
-							  KPV = (float)RxBuffer[4];
-		                      KIV = (float)RxBuffer[5]/10;
-		                      KDV = (float)RxBuffer[6];
-		                      P_DATA = kp;
-		                      I_DATA = ki;
-		                      D_DATA = kd;
-		                      VP_DATA = KPV;
-		                      VI_DATA = KIV;
-		                      VD_DATA = KDV;
-							  motor_ref.motor_run =RxBuffer[7];
-					  	  }
-						  else{
-								 k0=RxBuffer[0];
-								 PRINTF("USART Error !!!!!!!!\n\r");
-								 PRINTF("k0 = %d \n\r",k0);
-								 PRINTF("KP KI KD = %d %d %d \n\r",kp,ki,kd);
-								 motor_ref.motor_run =0;
-						      }
-                 }
-		          
-        
-      
-        
-	  }
-	 else if(motor_ref.motor_run !=3){
-		 
-		   Balance_Stop_Function();
+		     	   Balance_Stop_Function();
 		#ifdef DRV8302
 			GPIO_PinWrite(DRV8302_EN_GATE_GPIO,DRV8302_EN_GATE_GPIO_PIN,0);
 		#endif 
@@ -250,9 +207,46 @@ int main(void)
 	      GPIO_PortToggle(GPIOD,1<<BOARD_LED1_GPIO_PIN);
 	      DelayMs(50);
 	      HALL_Pulse =0;
-		    PRINTF("Motor Stop !!!!!!!!!!! \r\n");
+		   // PRINTF("Motor Stop !!!!!!!!!!! \r\n");
         // PRINTF("motor_run = %d \r\n",motor_ref.motor_run );
-	 }
+		  	 if(motor_ref.motor_run == 3){
+				  UART_ReadBlocking(DEMO_UART, RxBuffer, 8);
+				  PRINTF("PID input referece \n");
+                  for(i=0;i<8;i++){
+				  	    
+						  if(RxBuffer[0]==0xff){
+							  kp=RxBuffer[1];
+		            ki=RxBuffer[2];
+							  kd=RxBuffer[3];
+								vkp = RxBuffer[4];
+								vki = RxBuffer[5];
+								vkd = RxBuffer[6];
+		                     
+		            PRINTF("KP KI KD = %d %d %d \n\r",kp,ki,kd);
+							  PRINTF("vkp vki vkd = %d %d %d \n\r",vkp,vki,vkd);
+		                      P_DATA = kp;
+		                      I_DATA = ki;
+		                      D_DATA = kd;
+		                      VP_DATA = vkp;
+		                      VI_DATA = vki;
+		                      VD_DATA = vkd;
+							  motor_ref.motor_run =RxBuffer[7];
+					  	  }
+						  else{
+								 k0=RxBuffer[0];
+								 PRINTF("USART Error !!!!!!!!\n\r");
+								 PRINTF("k0 = %d \n\r",k0);
+								 PRINTF("KP KI KD = %d %d %d \n\r",kp,ki,kd);
+								 PRINTF("VKP VKI VKD = %d %d %d \n\r",kp,ki,kd);
+								  motor_ref.motor_run =RxBuffer[7];
+						      }
+                 }
+		          
+						}
+      
+        
+	  }
+	 
 	 
   
    /**********8Key process********************/  
